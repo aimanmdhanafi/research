@@ -3,142 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <title>CBBP HLP Masters Experiment - 3-Slot Scaffolding Matrix</title>
+    
+    <!-- Standardized jsPsych 8.x Live Web Mirrors -->
+    <link href="https://unpkg.com" rel="stylesheet" type="text/css" />
+    <script src="https://unpkg.com"></script>
+    <script src="https://unpkg.com"></script>
+
     <style>
-        /* Embedded core framework design settings */
-        .jspsych-display-element { display: flex; flex-direction: column; overflow-y: auto; background-color: #f4f7f6; font-family: Arial, sans-serif; min-height: 95vh; justify-content: center; align-items: center; }
-        .jspsych-content { max-width: 95%; text-align: center; }
-        
-        /* Custom 3-Slot Scaffolding Layout Containers */
-        .matrix-container { 
-            width: 100%; max-width: 600px; background: #ffffff; border-radius: 16px; border: 3px solid #1a73e8; padding: 30px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.08); text-align: center; box-sizing: border-box; margin: auto;
-        }
+        body { background-color: #f4f7f6; font-family: Arial, sans-serif; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 90vh; }
+        .matrix-container { width: 100%; max-width: 650px; background: #ffffff; border-radius: 16px; border: 3px solid #1a73e8; padding: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); text-align: center; box-sizing: border-box; }
         h2 { color: #1a73e8; font-size: 26px; margin-top: 0; margin-bottom: 15px; }
         .matrix-instruction { font-size: 16px; color: #5f6368; margin-bottom: 25px; }
-        
-        /* Explicit Matrix Color Codes for the Working Memory Processing Tracks */
         .slot-box { padding: 18px; margin: 12px 0; font-size: 24px; font-weight: bold; border-radius: 8px; }
         .slot-noun { border: 3px solid #28a745; background-color: #e8f5e9; color: #1b5e20; }
         .slot-verb-active { border: 3px dashed #f9a825; background-color: #fffde7; color: #f57f17; }
         .slot-verb-locked { border: 3px solid #f9a825; background-color: #fff9c4; color: #f57f17; }
         .slot-predicate-empty { border: 3px dashed #dadce0; background-color: #f8f9fa; color: #9aa0a6; }
         .slot-predicate-active { border: 3px dashed #d93025; background-color: #fce8e6; color: #c5221f; }
-        
-        /* Interactive Buttons tailored for Primary School Pupils */
         .jspsych-btn { font-size: 22px !important; padding: 15px 45px !important; margin: 12px !important; font-weight: bold !important; border-radius: 10px !important; cursor: pointer !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; text-decoration: none; border: none; }
-        
-        /* Special Action Button for Copying Data */
-        .copy-btn { font-size: 18px !important; padding: 12px 30px !important; margin-top: 15px !important; font-weight: bold !important; border-radius: 8px !important; cursor: pointer !important; background-color: #007bff; color: white; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; transition: background-color 0.2s; }
-        .copy-btn:hover { background-color: #0056b3; }
+        .copy-btn { font-size: 18px !important; padding: 12px 30px !important; margin-top: 15px !important; font-weight: bold !important; border-radius: 8px !important; cursor: pointer !important; background-color: #007bff; color: white; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; }
         .copy-success-msg { color: #28a745; font-weight: bold; margin-top: 10px; display: none; font-size: 16px; }
     </style>
 </head>
-<body class="jspsych-display-element">
+<body>
 
-    <div id="jspsych-target" class="jspsych-content"></div>
+    <div id="jspsych-target"></div>
 
     <script>
-        /* ==========================================
-           FIXED CORE ENGINE CODE
-           ========================================== */
         var experimentalData = [];
-        
-        // Globally exposed function to handle the safe clipboard copies
+
         window.copyDataToClipboard = function() {
             var dataTextArea = document.getElementById('data-output-box');
             dataTextArea.select();
-            dataTextArea.setSelectionRange(0, 99999); // Mobile compatibility constraint
-            
             navigator.clipboard.writeText(dataTextArea.value).then(function() {
                 var confirmationText = document.getElementById('copy-confirmation');
                 confirmationText.style.display = 'block';
-                setTimeout(function() {
-                    confirmationText.style.display = 'none';
-                }, 3000); // Alert message auto-fades after 3 seconds
-            }).catch(function(err) {
-                alert('Gagal menyalin data automatically. Sila salin text secara manual.');
+                setTimeout(function() { confirmationText.style.display = 'none'; }, 3000);
             });
         };
 
-        var initJsPsych = function() {
-            var engine = {};
-            engine.run = function(timeline) {
-                var currentStep = 0;
-                var displayDiv = document.getElementById('jspsych-target');
-                
-                function loadNextTrial() {
-                    if (currentStep >= timeline.length) {
-                        // End of experiment output routine with the new click-to-copy utility
-                        displayDiv.innerHTML = `
-                            <div class="matrix-container" style="border-color:#28a745;">
-                                <h2>Task Completed!</h2>
-                                <p class="matrix-instruction">The millisecond response tracking data has been recorded successfully.</p>
-                                <p style="text-align:left; font-size:14px; color:#333;"><strong>Instructions for researcher:</strong> Click the button below to secure all data, then paste it directly into Excel or SPSS.</p>
-                                
-                                <textarea id="data-output-box" readonly style="width:100%; height:180px; font-family:monospace; font-size:12px; padding:10px; border-radius:6px; border:1px solid #ccc; resize:none;">${JSON.stringify(experimentalData, null, 2)}</textarea>
-                                
-                                <button class="copy-btn" onclick="window.copyDataToClipboard()">Salin Data / Copy Data</button>
-                                <div id="copy-confirmation" class="copy-success-msg">✓ Data copied successfully to clipboard!</div>
-                            </div>`;
-                        return;
-                    }
-                    
-                    var trial = timeline[currentStep];
-                    displayDiv.innerHTML = trial.stimulus;
-                    
-                    var buttonContainer = document.createElement("div");
-                    trial.choices.forEach(function(choiceText, choiceIndex) {
-                        var btn = document.createElement("button");
-                        btn.className = "jspsych-btn";
-                        btn.innerHTML = choiceText;
-                        
-                        // Apply custom button styling parameters dynamically
-                        if (trial.choices.length === 1) {
-                            btn.style.backgroundColor = "#28a745";
-                            btn.style.color = "white";
-                        } else {
-                            btn.style.backgroundColor = (choiceText === 'is') ? '#673ab7' : '#e91e63';
-                            btn.style.color = "white";
-                        }
-                        
-                        btn.addEventListener("click", function() {
-                            var responseTime = (new Date).getTime() - startTime;
-                            var trialResult = {
-                                step: currentStep,
-                                response_index: choiceIndex,
-                                clicked_word: choiceText,
-                                rt_ms: responseTime
-                            };
-                            
-                            if (trial.data) {
-                                Object.assign(trialResult, trial.data);
-                            }
-                            
-                            // Calculate binary morphosyntactic accuracy
-                            if (trial.data && typeof trial.data.correct_idx !== 'undefined') {
-                                trialResult.is_accurate = (choiceIndex === trial.data.correct_idx) ? 1 : 0;
-                            }
-                            
-                            experimentalData.push(trialResult);
-                            currentStep++;
-                            loadNextTrial();
-                        });
-                        buttonContainer.appendChild(btn);
-                    });
-                    displayDiv.appendChild(buttonContainer);
-                    var startTime = (new Date).getTime();
-                }
-                loadNextTrial();
-            };
-            return engine;
-        };
+        // Initialize jsPsych
+        const jsPsych = initJsPsych({
+            display_element: 'jspsych-target',
+            on_finish: function() {
+                var globalData = jsPsych.data.get().values();
+                document.getElementById('jspsych-target').innerHTML = `
+                    <div class="matrix-container" style="border-color:#28a745;">
+                        <h2>Task Completed!</h2>
+                        <p class="matrix-instruction">The millisecond response tracking data has been recorded successfully.</p>
+                        <textarea id="data-output-box" readonly style="width:100%; height:180px; font-family:monospace; font-size:12px; padding:10px; border-radius:6px; border:1px solid #ccc; resize:none;">${JSON.stringify(globalData, null, 2)}</textarea>
+                        <button class="copy-btn" onclick="window.copyDataToClipboard()">Salin Data / Copy Data</button>
+                        <div id="copy-confirmation" class="copy-success-msg">✓ Data copied successfully to clipboard!</div>
+                    </div>`;
+            }
+        });
 
-        /* ==========================================
-           RUNNING THE EXPERIMENT TIMELINE
-           ========================================== */
-        const jsPsych = initJsPsych();
-
-        // Target Structural Sentence Parameters 
         const experimentalTrials = [
             { noun: "The boy", choices: ["is", "are"], correct_idx: 0, condition: "singular", predicate: "happy" },
             { noun: "The boys", choices: ["is", "are"], correct_idx: 1, condition: "plural", predicate: "playing" }
@@ -146,22 +65,22 @@
 
         let timeline = [];
 
-        // 1. Welcome Step Setup
+        // Welcome screen
         timeline.push({
-            choices: ['MULA / START'],
+            type: jsPsychHtmlButtonResponse,
             stimulus: `
                 <div class="matrix-container">
                     <h2>Sistem Pemetaan Morfosintaks</h2>
                     <p class="matrix-instruction">Welcome to the sentence building assistant. Click the button below when you are ready to begin.</p>
-                </div>`
+                </div>`,
+            choices: ['MULA / START'],
+            button_html: '<button class="jspsych-btn" style="background-color:#1a73e8; color:white;">%choice%</button>'
         });
 
-        // 2. Loop Generating the 3-Slot Scaffolding Pipeline
+        // 3-Slot experimental trials
         experimentalTrials.forEach((trial, index) => {
-            
-            // SLOT 1 & 2: Subject Gating and Copula Verb Choice Switch
             timeline.push({
-                choices: trial.choices,
+                type: jsPsychHtmlButtonResponse,
                 stimulus: `
                     <div class="matrix-container">
                         <p class="matrix-instruction"><strong>Task ${index + 1}:</strong> Connect the correct verb block instantly.</p>
@@ -169,6 +88,34 @@
                         <div class="slot-box slot-verb-active">[ Slot 2: Choose Agreement Verb ]</div>
                         <div class="slot-box slot-predicate-empty">[ Slot 3: Predicate Structure ]</div>
                     </div>`,
+                choices: trial.choices,
+                button_html: function(choice) {
+                    let btnColor = (choice === 'is') ? '#673ab7' : '#e91e63';
+                    return `<button class="jspsych-btn" style="background-color:${btnColor}; color:white; margin:10px;">${choice}</button>`;
+                },
                 data: { phase: "verb_decision_latency", condition: trial.condition, target_noun: trial.noun, correct_idx: trial.correct_idx }
             });
 
+            timeline.push({
+                type: jsPsychHtmlButtonResponse,
+                stimulus: function() {
+                    var lastTrialData = jsPsych.data.get().last(1).values()[0];
+                    var chosenVerb = trial.choices[lastTrialData.response] || "___";
+                    return `
+                        <div class="matrix-container">
+                            <p class="matrix-instruction">Lock down the complete sentence frame layout.</p>
+                            <div class="slot-box slot-noun" style="opacity: 0.6;">${trial.noun}</div>
+                            <div class="slot-box slot-verb-locked">${chosenVerb}</div>
+                            <div class="slot-box slot-predicate-active">[ Slot 3: Complete Predicate ] &rarr; Click to lock</div>
+                        </div>`;
+                },
+                choices: [trial.predicate],
+                button_html: '<button class="jspsych-btn" style="background-color:#28a745; color:white;">%choice%</button>',
+                data: { phase: "circuit_closure" }
+            });
+        });
+
+        jsPsych.run(timeline);
+    </script>
+</body>
+</html>
