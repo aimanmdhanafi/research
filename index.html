@@ -3,26 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <title>CBBP HLP Masters Experiment - 3-Slot Scaffolding Matrix</title>
-    
-    <!-- Standardized jsPsych 8.x Live Web Mirrors -->
-    <link href="https://unpkg.com" rel="stylesheet" type="text/css" />
-    <script src="https://unpkg.com"></script>
-    <script src="https://unpkg.com"></script>
-
     <style>
-        body { background-color: #f4f7f6; font-family: Arial, sans-serif; margin: 0; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 90vh; }
-        .matrix-container { width: 100%; max-width: 650px; background: #ffffff; border-radius: 16px; border: 3px solid #1a73e8; padding: 30px; box-shadow: 0 10px 25px rgba(0,0,0,0.08); text-align: center; box-sizing: border-box; }
+        body { 
+            background-color: #f4f7f6; 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 90vh; 
+        }
+        .matrix-container { 
+            width: 100%; 
+            max-width: 600px; 
+            background: #ffffff; 
+            border-radius: 16px; 
+            border: 3px solid #1a73e8; 
+            padding: 30px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08); 
+            text-align: center; 
+            box-sizing: border-box; 
+            margin: auto;
+        }
         h2 { color: #1a73e8; font-size: 26px; margin-top: 0; margin-bottom: 15px; }
         .matrix-instruction { font-size: 16px; color: #5f6368; margin-bottom: 25px; }
+        
         .slot-box { padding: 18px; margin: 12px 0; font-size: 24px; font-weight: bold; border-radius: 8px; }
         .slot-noun { border: 3px solid #28a745; background-color: #e8f5e9; color: #1b5e20; }
         .slot-verb-active { border: 3px dashed #f9a825; background-color: #fffde7; color: #f57f17; }
         .slot-verb-locked { border: 3px solid #f9a825; background-color: #fff9c4; color: #f57f17; }
         .slot-predicate-empty { border: 3px dashed #dadce0; background-color: #f8f9fa; color: #9aa0a6; }
         .slot-predicate-active { border: 3px dashed #d93025; background-color: #fce8e6; color: #c5221f; }
-        .jspsych-btn { font-size: 22px !important; padding: 15px 45px !important; margin: 12px !important; font-weight: bold !important; border-radius: 10px !important; cursor: pointer !important; box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; text-decoration: none; border: none; }
-        .copy-btn { font-size: 18px !important; padding: 12px 30px !important; margin-top: 15px !important; font-weight: bold !important; border-radius: 8px !important; cursor: pointer !important; background-color: #007bff; color: white; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; }
-        .copy-success-msg { color: #28a745; font-weight: bold; margin-top: 10px; display: none; font-size: 16px; }
+        
+        .jspsych-btn { 
+            font-size: 22px !important; 
+            padding: 15px 45px !important; 
+            margin: 12px !important; 
+            font-weight: bold !important; 
+            border-radius: 10px !important; 
+            cursor: pointer !important; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important; 
+            background-color: #1a73e8; 
+            color: white; 
+            border: none;
+        }
+        .copy-btn { font-size: 18px !important; padding: 12px 30px !important; margin-top: 15px !important; font-weight: bold !important; border-radius: 8px !important; cursor: pointer !important; background-color: #007bff; color: white; border: none; width: 100%; }
+        .copy-confirmation-box { color: #28a745; font-weight: bold; margin-top: 10px; display: none; font-size: 16px; }
     </style>
 </head>
 <body>
@@ -31,91 +58,145 @@
 
     <script>
         var experimentalData = [];
+        var currentStep = 0;
+        
+        var timeline = [
+            {
+                type: "welcome",
+                stimulus: `
+                    <div class="matrix-container">
+                        <h2>Sistem Pemetaan Morfosintaks</h2>
+                        <p class="matrix-instruction">Welcome to the sentence building assistant. Click the button below when you are ready to begin.</p>
+                    </div>`,
+                choices: ['MULA / START']
+            },
+            {
+                type: "task",
+                noun: "The boy",
+                choices: ["is", "are"],
+                correct_idx: 0,
+                condition: "singular",
+                predicate: "happy"
+            },
+            {
+                type: "task",
+                noun: "The boys",
+                choices: ["is", "are"],
+                correct_idx: 1,
+                condition: "plural",
+                predicate: "playing"
+            }
+        ];
 
         window.copyDataToClipboard = function() {
             var dataTextArea = document.getElementById('data-output-box');
             dataTextArea.select();
             navigator.clipboard.writeText(dataTextArea.value).then(function() {
-                var confirmationText = document.getElementById('copy-confirmation');
-                confirmationText.style.display = 'block';
-                setTimeout(function() { confirmationText.style.display = 'none'; }, 3000);
+                var conf = document.getElementById('copy-confirmation');
+                conf.style.display = 'block';
+                setTimeout(function() { conf.style.display = 'none'; }, 3000);
             });
         };
 
-        // Initialize jsPsych
-        const jsPsych = initJsPsych({
-            display_element: 'jspsych-target',
-            on_finish: function() {
-                var globalData = jsPsych.data.get().values();
-                document.getElementById('jspsych-target').innerHTML = `
+        function renderEngine() {
+            var displayDiv = document.getElementById('jspsych-target');
+            
+            if (currentStep >= timeline.length) {
+                displayDiv.innerHTML = `
                     <div class="matrix-container" style="border-color:#28a745;">
                         <h2>Task Completed!</h2>
                         <p class="matrix-instruction">The millisecond response tracking data has been recorded successfully.</p>
-                        <textarea id="data-output-box" readonly style="width:100%; height:180px; font-family:monospace; font-size:12px; padding:10px; border-radius:6px; border:1px solid #ccc; resize:none;">${JSON.stringify(globalData, null, 2)}</textarea>
+                        <textarea id="data-output-box" readonly style="width:100%; height:180px; font-family:monospace; font-size:12px; padding:10px; border-radius:6px; border:1px solid #ccc; resize:none;">${JSON.stringify(experimentalData, null, 2)}</textarea>
                         <button class="copy-btn" onclick="window.copyDataToClipboard()">Salin Data / Copy Data</button>
-                        <div id="copy-confirmation" class="copy-success-msg">✓ Data copied successfully to clipboard!</div>
+                        <div id="copy-confirmation" class="copy-confirmation-box">✓ Data copied successfully to clipboard!</div>
                     </div>`;
+                return;
             }
-        });
 
-        const experimentalTrials = [
-            { noun: "The boy", choices: ["is", "are"], correct_idx: 0, condition: "singular", predicate: "happy" },
-            { noun: "The boys", choices: ["is", "are"], correct_idx: 1, condition: "plural", predicate: "playing" }
-        ];
+            var currentTrial = timeline[currentStep];
 
-        let timeline = [];
-
-        // Welcome screen
-        timeline.push({
-            type: jsPsychHtmlButtonResponse,
-            stimulus: `
-                <div class="matrix-container">
-                    <h2>Sistem Pemetaan Morfosintaks</h2>
-                    <p class="matrix-instruction">Welcome to the sentence building assistant. Click the button below when you are ready to begin.</p>
-                </div>`,
-            choices: ['MULA / START'],
-            button_html: '<button class="jspsych-btn" style="background-color:#1a73e8; color:white;">%choice%</button>'
-        });
-
-        // 3-Slot experimental trials
-        experimentalTrials.forEach((trial, index) => {
-            timeline.push({
-                type: jsPsychHtmlButtonResponse,
-                stimulus: `
+            if (currentTrial.type === "welcome") {
+                displayDiv.innerHTML = currentTrial.stimulus;
+                var btnContainer = document.createElement("div");
+                var startBtn = document.createElement("button");
+                startBtn.className = "jspsych-btn";
+                startBtn.innerHTML = currentTrial.choices[0];
+                startBtn.onclick = function() {
+                    currentStep++;
+                    renderEngine();
+                };
+                btnContainer.appendChild(startBtn);
+                displayDiv.appendChild(btnContainer);
+            } 
+            
+            else if (currentTrial.type === "task") {
+                displayDiv.innerHTML = `
                     <div class="matrix-container">
-                        <p class="matrix-instruction"><strong>Task ${index + 1}:</strong> Connect the correct verb block instantly.</p>
-                        <div class="slot-box slot-noun">[ Slot 1: Subject ] &rarr; ${trial.noun}</div>
+                        <p class="matrix-instruction"><strong>Task:</strong> Connect the correct verb block instantly.</p>
+                        <div class="slot-box slot-noun">[ Slot 1: Subject ] &rarr; ${currentTrial.noun}</div>
                         <div class="slot-box slot-verb-active">[ Slot 2: Choose Agreement Verb ]</div>
                         <div class="slot-box slot-predicate-empty">[ Slot 3: Predicate Structure ]</div>
-                    </div>`,
-                choices: trial.choices,
-                button_html: function(choice) {
-                    let btnColor = (choice === 'is') ? '#673ab7' : '#e91e63';
-                    return `<button class="jspsych-btn" style="background-color:${btnColor}; color:white; margin:10px;">${choice}</button>`;
-                },
-                data: { phase: "verb_decision_latency", condition: trial.condition, target_noun: trial.noun, correct_idx: trial.correct_idx }
-            });
+                    </div>`;
 
-            timeline.push({
-                type: jsPsychHtmlButtonResponse,
-                stimulus: function() {
-                    var lastTrialData = jsPsych.data.get().last(1).values()[0];
-                    var chosenVerb = trial.choices[lastTrialData.response] || "___";
-                    return `
-                        <div class="matrix-container">
-                            <p class="matrix-instruction">Lock down the complete sentence frame layout.</p>
-                            <div class="slot-box slot-noun" style="opacity: 0.6;">${trial.noun}</div>
-                            <div class="slot-box slot-verb-locked">${chosenVerb}</div>
-                            <div class="slot-box slot-predicate-active">[ Slot 3: Complete Predicate ] &rarr; Click to lock</div>
-                        </div>`;
-                },
-                choices: [trial.predicate],
-                button_html: '<button class="jspsych-btn" style="background-color:#28a745; color:white;">%choice%</button>',
-                data: { phase: "circuit_closure" }
-            });
-        });
+                var startTime = (new Date).getTime();
+                var btnContainer = document.createElement("div");
 
-        jsPsych.run(timeline);
+                currentTrial.choices.forEach(function(choiceText, idx) {
+                    var choiceBtn = document.createElement("button");
+                    choiceBtn.className = "jspsych-btn";
+                    choiceBtn.innerHTML = choiceText;
+                    choiceBtn.style.backgroundColor = (choiceText === 'is') ? '#673ab7' : '#e91e63';
+                    choiceBtn.style.color = "white";
+                    choiceBtn.style.margin = "10px";
+                    
+                    choiceBtn.onclick = function() {
+                        var rt = (new Date).getTime() - startTime;
+                        var isAccurate = (idx === currentTrial.correct_idx) ? 1 : 0;
+                        
+                        experimentalData.push({
+                            target_noun: currentTrial.noun,
+                            condition: currentTrial.condition,
+                            clicked_verb: choiceText,
+                            is_accurate: isAccurate,
+                            rt_ms: rt
+                        });
+
+                        renderClosureStep(currentTrial, choiceText);
+                    };
+                    btnContainer.appendChild(choiceBtn);
+                });
+                displayDiv.appendChild(btnContainer);
+            }
+        }
+
+        function renderClosureStep(trial, chosenVerb) {
+            var displayDiv = document.getElementById('jspsych-target');
+            displayDiv.innerHTML = `
+                <div class="matrix-container">
+                    <p class="matrix-instruction">Lock down the complete sentence frame layout.</p>
+                    <div class="slot-box slot-noun" style="opacity: 0.6;">${trial.noun}</div>
+                    <div class="slot-box slot-verb-locked">${chosenVerb}</div>
+                    <div class="slot-box slot-predicate-active">[ Slot 3: Complete Predicate ] &rarr; Click to lock</div>
+                </div>`;
+
+            var btnContainer = document.createElement("div");
+            var lockBtn = document.createElement("button");
+            lockBtn.className = "jspsych-btn";
+            lockBtn.style.backgroundColor = "#28a745";
+            lockBtn.style.color = "white";
+            lockBtn.innerHTML = trial.predicate;
+            
+            lockBtn.onclick = function() {
+                currentStep++;
+                renderEngine();
+            };
+            btnContainer.appendChild(lockBtn);
+            displayDiv.appendChild(lockBtn); // fallthrough safe capture anchor
+        }
+
+        window.onload = function() {
+            renderEngine();
+        };
     </script>
 </body>
 </html>
